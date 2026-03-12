@@ -1,5 +1,13 @@
 var builder = DistributedApplication.CreateBuilder(args);
 
-builder.AddProject<Projects.ApiService>("apiservice").WithHttpHealthCheck("/health");
+var sqlServer = builder.AddSqlServer("sqlserver")
+    .WithDataVolume();
+
+var appDatabase = sqlServer.AddDatabase("appdb");
+
+builder.AddProject<Projects.ApiService>("apiservice")
+    .WithReference(appDatabase)
+    .WaitFor(appDatabase)
+    .WithHttpHealthCheck("/health");
 
 builder.Build().Run();
