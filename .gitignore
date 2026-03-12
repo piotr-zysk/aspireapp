@@ -3,3 +3,5 @@ obj/
 /packages/
 riderModule.iml
 /_ReSharper.Caches/
+AppHost/aspirate-output/**/.apiservice.secrets
+AppHost/aspirate-output/**/*.secrets
