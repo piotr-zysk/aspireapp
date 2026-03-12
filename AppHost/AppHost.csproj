@@ -8,4 +8,8 @@
         <UserSecretsId>6ec6692b-52a9-4e4c-b003-bb7f1e046550</UserSecretsId>
     </PropertyGroup>
 
+    <ItemGroup>
+        <ProjectReference Include="..\ApiService\ApiService.csproj"/>
+    </ItemGroup>
+
 </Project>
