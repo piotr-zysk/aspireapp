@@ -1,0 +1,9 @@
+resources:
+- sqlserver
+- apiservice
+- dashboard.yaml
+
+generatorOptions:
+  disableNameSuffixHash: true
+
+

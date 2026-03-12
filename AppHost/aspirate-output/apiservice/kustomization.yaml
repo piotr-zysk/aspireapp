@@ -1,0 +1,30 @@
+resources:
+- deployment.yaml
+- service.yaml
+
+generatorOptions:
+  disableNameSuffixHash: true
+
+configMapGenerator:
+- name: apiservice-env
+  literals:
+    - OTEL_DOTNET_EXPERIMENTAL_OTLP_EMIT_EXCEPTION_LOG_ATTRIBUTES=true
+    - OTEL_DOTNET_EXPERIMENTAL_OTLP_EMIT_EVENT_LOG_ATTRIBUTES=true
+    - OTEL_DOTNET_EXPERIMENTAL_OTLP_RETRY=in_memory
+    - ASPNETCORE_FORWARDEDHEADERS_ENABLED=true
+    - HTTP_PORTS=8080
+    - APPDB_HOST=sqlserver
+    - APPDB_PORT=1433
+    - APPDB_USERNAME=sa
+    - APPDB_PASSWORD=ZJcG7bC9OYF!4Mq4qhq6F4
+    - APPDB_URI=mssql://sa:ZJcG7bC9OYF!4Mq4qhq6F4@sqlserver:1433/appdb
+    - APPDB_JDBCCONNECTIONSTRING=jdbc:sqlserver://sqlserver:1433;trustServerCertificate=true;databaseName=appdb
+    - APPDB_DATABASENAME=appdb
+    - OTEL_EXPORTER_OTLP_ENDPOINT=http://aspire-dashboard:18889
+    - OTEL_SERVICE_NAME=apiservice
+    - ASPNETCORE_URLS=http://+:8080;
+
+secretGenerator:
+- name: apiservice-secrets
+  envs:
+  - .apiservice.secrets
