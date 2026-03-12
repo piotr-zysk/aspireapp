@@ -1,5 +1,6 @@
 using ApiService.Data;
 using ApiService.Models;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -30,6 +31,7 @@ await using (var scope = app.Services.CreateAsyncScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     await dbContext.Database.EnsureCreatedAsync();
+    await EnsureReadCommittedSnapshotAsync(dbContext.Database.GetConnectionString());
 }
 
 var assetsGroup = app.MapGroup("/assets").WithTags("Assets");
@@ -93,6 +95,49 @@ assetsGroup.MapDelete("/{id:int}", async (int id, AppDbContext dbContext) =>
 app.MapHealthChecks("/health");
 
 app.Run();
+
+static async Task EnsureReadCommittedSnapshotAsync(string? connectionString)
+{
+    if (string.IsNullOrWhiteSpace(connectionString))
+    {
+        throw new InvalidOperationException("Connection string 'appdb' was not found.");
+    }
+
+    var appDatabaseBuilder = new SqlConnectionStringBuilder(connectionString);
+    var databaseName = appDatabaseBuilder.InitialCatalog;
+
+    if (string.IsNullOrWhiteSpace(databaseName))
+    {
+        throw new InvalidOperationException("Connection string 'appdb' does not include a database name.");
+    }
+
+    var masterConnectionStringBuilder = new SqlConnectionStringBuilder(connectionString)
+    {
+        InitialCatalog = "master"
+    };
+
+    await using var connection = new SqlConnection(masterConnectionStringBuilder.ConnectionString);
+    await connection.OpenAsync();
+
+    await using var command = connection.CreateCommand();
+    command.CommandText =
+        """
+        IF EXISTS (
+            SELECT 1
+            FROM sys.databases
+            WHERE name = @databaseName
+              AND is_read_committed_snapshot_on = 0
+        )
+        BEGIN
+            DECLARE @sql nvarchar(max) =
+                N'ALTER DATABASE [' + REPLACE(@databaseName, ']', ']]') + N'] SET READ_COMMITTED_SNAPSHOT ON WITH ROLLBACK IMMEDIATE';
+            EXEC(@sql);
+        END
+        """;
+    command.Parameters.AddWithValue("@databaseName", databaseName);
+
+    await command.ExecuteNonQueryAsync();
+}
 
 public record AssetCreateRequest(string Name, string Description, decimal Quantity);
 public record AssetUpdateRequest(string Name, string Description, decimal Quantity);
